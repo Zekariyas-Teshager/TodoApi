@@ -1,0 +1,61 @@
+## .NET Core
+bin/
+obj/
+*.user
+*.userosscache
+*.suo
+*.userprefs
+*.userprefs.md5
+*.userprefs~
+*.lock.json
+
+## Build results
+[Dd]ebug/
+[Rr]elease/
+[Dd]ebugPublic/
+[Rr]eleases/
+x64/
+x86/
+bld/
+[Bb]in/
+[Oo]bj/
+[Bb]uild/
+[Bb]uildLog/
+
+## Visual Studio
+.vs/
+*.sln.docstates
+*.suo
+*.user
+*.userosscache
+*.sln.docstates
+.vsconfig
+*.swp
+*._*
+
+## Visual Studio Code
+.vscode/
+*.code-workspace
+
+## Environment Files
+.env
+appsettings.Development.json
+appsettings.Production.json
+
+## NuGet Packages
+packages/
+*.nupkg
+project.lock.json
+project.fragment.lock.json
+artifacts/
+
+## Testing
+TestResults/
+*.trx
+*.tmp
+*.log
+
+## Ignore sensitive files
+**/appsettings.*.json
+!appsettings.json
+secrets.json
