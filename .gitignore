@@ -57,8 +57,9 @@ TestResults/
 
 ## Ignore sensitive files
 **/appsettings.*.json
+a
 !appsettings.json
 secrets.json
 
 ## ignore migration files
-*/Migrations
+*/Migrations/*
