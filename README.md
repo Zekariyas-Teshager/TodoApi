@@ -13,7 +13,7 @@ A RESTful Todo API built with ASP.NET Core 10, Entity Framework Core, and JWT au
 ## Tech Stack
 - .NET 10
 - Entity Framework Core
-- SQL Server
+- SQL Server or Mysql
 - JWT Authentication
 - Swagger UI
 
@@ -21,18 +21,13 @@ A RESTful Todo API built with ASP.NET Core 10, Entity Framework Core, and JWT au
 
 ### Prerequisites
 - .NET 10 SDK
-- SQL Server (LocalDB or full installation)
+- SQL Server (LocalDB or full installation) or Mysql
 
 ### Installation
 1. Clone the repository
 2. Update connection string in `appsettings.json`
-3. Run migrations: `dotnet ef database update`
-4. Run the app: `dotnet run`
+3. Create Initial Migration `dotnet ef migrations add InitialCreate`
+4. Run migrations: `dotnet ef database update`
+5. Run the app: `dotnet run`
 
-### API Endpoints
-- `POST /api/auth/register` - Register new user
-- `POST /api/auth/login` - Login and get tokens
-- `GET /api/todoitems` - Get todo items
-- `POST /api/todoitems` - Create todo item
-- `PUT /api/todoitems/{id}` - Update todo item
-- `DELETE /api/todoitems/{id}` - Delete todo item
+---
