@@ -59,3 +59,6 @@ TestResults/
 **/appsettings.*.json
 !appsettings.json
 secrets.json
+
+## ignore migration files
+*/Migrations
