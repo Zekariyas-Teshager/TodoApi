@@ -63,3 +63,4 @@ secrets.json
 
 ## ignore migration files
 */Migrations/*
+*/Migrations/TodoContextModelSnapshot.cs
