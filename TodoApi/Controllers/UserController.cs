@@ -38,7 +38,7 @@ namespace TodoApi.Controllers
         /// <summary>
         /// Get current user's profile
         /// </summary>
-        [Authorize(Roles = "User")]
+        [Authorize]
         [HttpGet("me")]
         [ProducesResponseType(typeof(UserProfileDto), StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -60,7 +60,7 @@ namespace TodoApi.Controllers
         /// <summary>
         /// Update current user's profile
         /// </summary>
-        [Authorize(Roles = "User")]
+        [Authorize]
         [HttpPut("me")]
         [ProducesResponseType(typeof(UserProfileDto), StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]

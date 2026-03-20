@@ -22,6 +22,7 @@
 			<PrivateAssets>all</PrivateAssets>
 			<IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
 		</PackageReference>
+		<PackageReference Include="MySql.EntityFrameworkCore" Version="10.0.1" />
 		<PackageReference Include="Scalar.AspNetCore" Version="2.13.10" />
 		<PackageReference Include="Swashbuckle.AspNetCore.SwaggerUI" Version="10.1.5" />
 		<!-- Remove any Swashbuckle or Microsoft.OpenApi references -->
