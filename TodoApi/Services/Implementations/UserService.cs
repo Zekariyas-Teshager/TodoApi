@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using TodoApi.Data;
 using TodoApi.DTOs;
 using TodoApi.Models;
 using TodoApi.Services.Interfaces;
@@ -20,12 +21,12 @@ namespace TodoApi.Services.Implementations
 
         public async Task<IEnumerable<UserProfileDto>> GetAllUsersAsync()
         {
-            var users = await _context.Users
-                .Select(u => new UserProfileDto
+            var users = await _context
+                .Users.Select(u => new UserProfileDto
                 {
                     Id = u.Id,
                     Email = u.Email ?? string.Empty,
-                    FullName = u.FullName
+                    FullName = u.FullName,
                 })
                 .ToListAsync();
 
@@ -33,10 +34,12 @@ namespace TodoApi.Services.Implementations
             return users;
         }
 
-        public async Task<IEnumerable<AdminUserTokenInfoDto>> GetUserTokensByAdminAsync(string userId)
+        public async Task<IEnumerable<AdminUserTokenInfoDto>> GetUserTokensByAdminAsync(
+            string userId
+        )
         {
-            var tokens = await _context.RefreshTokens
-                .Include(rt => rt.User)
+            var tokens = await _context
+                .RefreshTokens.Include(rt => rt.User)
                 .Where(rt => rt.UserId == userId)
                 .Select(rt => new AdminUserTokenInfoDto
                 {
@@ -47,16 +50,23 @@ namespace TodoApi.Services.Implementations
                     ReplacedByToken = rt.ReplacedByToken,
                     CreatedAt = rt.CreatedAt,
                     CreatedByIp = rt.CreatedByIp,
-                    User = rt.User != null ? new UserProfileDto
-                    {
-                        Id = rt.User.Id,
-                        Email = rt.User.Email ?? string.Empty,
-                        FullName = rt.User.FullName
-                    } : null
+                    User =
+                        rt.User != null
+                            ? new UserProfileDto
+                            {
+                                Id = rt.User.Id,
+                                Email = rt.User.Email ?? string.Empty,
+                                FullName = rt.User.FullName,
+                            }
+                            : null,
                 })
                 .ToListAsync();
 
-            _logger.LogInformation("Admin retrieved {Count} tokens for user {UserId}", tokens.Count, userId);
+            _logger.LogInformation(
+                "Admin retrieved {Count} tokens for user {UserId}",
+                tokens.Count,
+                userId
+            );
             return tokens;
         }
 
@@ -66,13 +76,13 @@ namespace TodoApi.Services.Implementations
 
         public async Task<UserProfileDto?> GetUserProfileAsync(string userId)
         {
-            var user = await _context.Users
-                .Where(u => u.Id == userId)
+            var user = await _context
+                .Users.Where(u => u.Id == userId)
                 .Select(u => new UserProfileDto
                 {
                     Id = u.Id,
                     Email = u.Email ?? string.Empty,
-                    FullName = u.FullName
+                    FullName = u.FullName,
                 })
                 .FirstOrDefaultAsync();
 
@@ -86,10 +96,14 @@ namespace TodoApi.Services.Implementations
             return user;
         }
 
-        public async Task<UserProfileDto?> UpdateUserProfileAsync(string userId, UpdateProfileDto updateDto, bool isAdmin)
+        public async Task<UserProfileDto?> UpdateUserProfileAsync(
+            string userId,
+            UpdateProfileDto updateDto,
+            bool isAdmin
+        )
         {
             var existingUser = await _context.Users.FindAsync(userId);
-            
+
             if (existingUser == null)
             {
                 _logger.LogWarning("User not found for update: {UserId}", userId);
@@ -99,28 +113,42 @@ namespace TodoApi.Services.Implementations
             // Check permission (already checked in controller, but double-check)
             if (!isAdmin && existingUser.Id != userId)
             {
-                _logger.LogWarning("User {UserId} attempted to update another user's profile", userId);
-                throw new UnauthorizedAccessException("You don't have permission to update this profile");
+                _logger.LogWarning(
+                    "User {UserId} attempted to update another user's profile",
+                    userId
+                );
+                throw new UnauthorizedAccessException(
+                    "You don't have permission to update this profile"
+                );
             }
 
             // Update properties if provided
             bool hasChanges = false;
 
-            if (!string.IsNullOrWhiteSpace(updateDto.FullName) && updateDto.FullName != existingUser.FullName)
+            if (
+                !string.IsNullOrWhiteSpace(updateDto.FullName)
+                && updateDto.FullName != existingUser.FullName
+            )
             {
                 existingUser.FullName = updateDto.FullName;
                 hasChanges = true;
             }
 
-            if (!string.IsNullOrWhiteSpace(updateDto.Email) && updateDto.Email != existingUser.Email)
+            if (
+                !string.IsNullOrWhiteSpace(updateDto.Email)
+                && updateDto.Email != existingUser.Email
+            )
             {
                 // Check if email is already taken
-                var emailExists = await _context.Users
-                    .AnyAsync(u => u.Email == updateDto.Email && u.Id != userId);
-                
+                var emailExists = await _context.Users.AnyAsync(u =>
+                    u.Email == updateDto.Email && u.Id != userId
+                );
+
                 if (emailExists)
                 {
-                    throw new InvalidOperationException($"Email {updateDto.Email} is already in use");
+                    throw new InvalidOperationException(
+                        $"Email {updateDto.Email} is already in use"
+                    );
                 }
 
                 existingUser.Email = updateDto.Email;
@@ -148,8 +176,8 @@ namespace TodoApi.Services.Implementations
 
         public async Task<IEnumerable<TokenInfoDto>> GetUserTokensAsync(string userId)
         {
-            var tokens = await _context.RefreshTokens
-                .Where(rt => rt.UserId == userId)
+            var tokens = await _context
+                .RefreshTokens.Where(rt => rt.UserId == userId)
                 .Select(rt => new TokenInfoDto
                 {
                     Token = rt.Token,
@@ -157,11 +185,15 @@ namespace TodoApi.Services.Implementations
                     IsRevoked = rt.IsRevoked,
                     ReplacedByToken = rt.ReplacedByToken,
                     CreatedAt = rt.CreatedAt,
-                    CreatedByIp = rt.CreatedByIp
+                    CreatedByIp = rt.CreatedByIp,
                 })
                 .ToListAsync();
 
-            _logger.LogInformation("Retrieved {Count} tokens for user {UserId}", tokens.Count, userId);
+            _logger.LogInformation(
+                "Retrieved {Count} tokens for user {UserId}",
+                tokens.Count,
+                userId
+            );
             return tokens;
         }
 

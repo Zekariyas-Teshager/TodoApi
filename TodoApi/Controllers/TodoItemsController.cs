@@ -1,8 +1,8 @@
 ﻿// Controllers/TodoItemsController.cs
+using System.Security.Claims;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using System.Security.Claims;
 using TodoApi.DTOs;
 using TodoApi.Services.Interfaces;
 
@@ -18,7 +18,8 @@ namespace TodoApi.Controllers
 
         public TodoItemsController(
             ITodoItemService todoItemService,
-            ILogger<TodoItemsController> logger)
+            ILogger<TodoItemsController> logger
+        )
         {
             _todoItemService = todoItemService;
             _logger = logger;
@@ -40,7 +41,7 @@ namespace TodoApi.Controllers
         }
 
         // GET: api/TodoItems/5
-        [HttpGet("{id}")]
+        [HttpGet("{id:long}")]
         [ProducesResponseType(typeof(TodoItemResponseDto), StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
         [ProducesResponseType(StatusCodes.Status403Forbidden)]
@@ -53,7 +54,7 @@ namespace TodoApi.Controllers
             try
             {
                 var todoItem = await _todoItemService.GetTodoItemByIdAsync(id, userId, isAdmin);
-                
+
                 if (todoItem == null)
                 {
                     return NotFound(new { message = $"Todo item with ID {id} not found" });
@@ -72,7 +73,9 @@ namespace TodoApi.Controllers
         [ProducesResponseType(typeof(TodoItemResponseDto), StatusCodes.Status201Created)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         [ProducesResponseType(StatusCodes.Status401Unauthorized)]
-        public async Task<ActionResult<TodoItemResponseDto>> PostTodoItem([FromBody] CreateTodoItemDto createDto)
+        public async Task<ActionResult<TodoItemResponseDto>> PostTodoItem(
+            [FromBody] CreateTodoItemDto createDto
+        )
         {
             if (!ModelState.IsValid)
             {
@@ -80,20 +83,23 @@ namespace TodoApi.Controllers
             }
 
             var userId = GetCurrentUserId();
-            
+
             var createdItem = await _todoItemService.CreateTodoItemAsync(createDto, userId);
-            
+
             return CreatedAtAction(nameof(GetTodoItem), new { id = createdItem.Id }, createdItem);
         }
 
         // PATCH: api/TodoItems/5
-        [HttpPatch("{id}")]
+        [HttpPatch("{id:long}")]
         [ProducesResponseType(StatusCodes.Status204NoContent)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
         [ProducesResponseType(StatusCodes.Status403Forbidden)]
         [ProducesResponseType(StatusCodes.Status401Unauthorized)]
-        public async Task<IActionResult> PatchTodoItem(long id, [FromBody] UpdateTodoItemDto updateDto)
+        public async Task<IActionResult> PatchTodoItem(
+            long id,
+            [FromBody] UpdateTodoItemDto updateDto
+        )
         {
             if (!ModelState.IsValid)
             {
@@ -105,8 +111,13 @@ namespace TodoApi.Controllers
 
             try
             {
-                var result = await _todoItemService.UpdateTodoItemAsync(id, updateDto, userId, isAdmin);
-                
+                var result = await _todoItemService.UpdateTodoItemAsync(
+                    id,
+                    updateDto,
+                    userId,
+                    isAdmin
+                );
+
                 if (!result)
                 {
                     return NotFound(new { message = $"Todo item with ID {id} not found" });
@@ -128,14 +139,16 @@ namespace TodoApi.Controllers
                 var exists = await _todoItemService.TodoItemExistsAsync(id);
                 if (!exists)
                 {
-                    return NotFound(new { message = $"Todo item with ID {id} was deleted during update" });
+                    return NotFound(
+                        new { message = $"Todo item with ID {id} was deleted during update" }
+                    );
                 }
                 throw;
             }
         }
 
         // DELETE: api/TodoItems/5
-        [HttpDelete("{id}")]
+        [HttpDelete("{id:long}")]
         [ProducesResponseType(StatusCodes.Status204NoContent)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
         [ProducesResponseType(StatusCodes.Status403Forbidden)]
@@ -148,7 +161,7 @@ namespace TodoApi.Controllers
             try
             {
                 var result = await _todoItemService.DeleteTodoItemAsync(id, userId, isAdmin);
-                
+
                 if (!result)
                 {
                     return NotFound(new { message = $"Todo item with ID {id} not found" });
@@ -166,9 +179,9 @@ namespace TodoApi.Controllers
 
         private string GetCurrentUserId()
         {
-            return User.FindFirstValue("userId") ?? 
-                   User.FindFirstValue(ClaimTypes.NameIdentifier) ?? 
-                   throw new UnauthorizedAccessException("User ID not found in token");
+            return User.FindFirstValue("userId")
+                ?? User.FindFirstValue(ClaimTypes.NameIdentifier)
+                ?? throw new UnauthorizedAccessException("User ID not found in token");
         }
 
         private bool IsCurrentUserAdmin()

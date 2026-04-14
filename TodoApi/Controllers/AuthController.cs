@@ -1,6 +1,6 @@
+using System.Security.Claims;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using System.Security.Claims;
 using TodoApi.DTOs;
 using TodoApi.Services.Interfaces;
 
@@ -35,7 +35,10 @@ namespace TodoApi.Controllers
             }
             catch (Exception ex)
             {
-                return StatusCode(500, new { message = "An error occurred during registration", error = ex.Message });
+                return StatusCode(
+                    500,
+                    new { message = "An error occurred during registration", error = ex.Message }
+                );
             }
         }
 
@@ -57,7 +60,10 @@ namespace TodoApi.Controllers
             }
             catch (Exception ex)
             {
-                return StatusCode(500, new { message = "An error occurred during login", error = ex.Message });
+                return StatusCode(
+                    500,
+                    new { message = "An error occurred during login", error = ex.Message }
+                );
             }
         }
 
@@ -80,7 +86,10 @@ namespace TodoApi.Controllers
             }
             catch (Exception ex)
             {
-                return StatusCode(500, new { message = "An error occurred refreshing token", error = ex.Message });
+                return StatusCode(
+                    500,
+                    new { message = "An error occurred refreshing token", error = ex.Message }
+                );
             }
         }
 
@@ -95,10 +104,10 @@ namespace TodoApi.Controllers
                 var isAdmin = User.IsInRole("Admin");
 
                 var result = await _authService.RevokeTokenAsync(token, userId, isAdmin);
-                
+
                 if (result)
                     return Ok(new { message = "Token revoked successfully" });
-                
+
                 return NotFound(new { message = "Refresh token not found" });
             }
             catch (UnauthorizedAccessException ex)
@@ -111,7 +120,10 @@ namespace TodoApi.Controllers
             }
             catch (Exception ex)
             {
-                return StatusCode(500, new { message = "An error occurred revoking token", error = ex.Message });
+                return StatusCode(
+                    500,
+                    new { message = "An error occurred revoking token", error = ex.Message }
+                );
             }
         }
 
@@ -127,7 +139,10 @@ namespace TodoApi.Controllers
             }
             catch (Exception ex)
             {
-                return StatusCode(500, new { message = "An error occurred during logout", error = ex.Message });
+                return StatusCode(
+                    500,
+                    new { message = "An error occurred during logout", error = ex.Message }
+                );
             }
         }
     }
