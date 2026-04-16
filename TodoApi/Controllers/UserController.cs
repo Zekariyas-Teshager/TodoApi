@@ -137,6 +137,68 @@ namespace TodoApi.Controllers
             return Ok(tokens);
         }
 
+
+        /// <summary>
+        /// Change current user's password
+        /// </summary>
+        /// <returns></returns>
+        /// <exception cref="UnauthorizedAccessException"></exception>
+        /// <exception cref="InvalidOperationException"></exception>
+        /// <response code="200">Password changed successfully</response>
+        /// <response code="400">Invalid input or password change failed</response>
+        /// <response code="401">Unauthorized</response>
+        /// <response code="403">Forbidden</response>
+        /// <response code="404">User not found</response>
+        /// <remarks>
+        /// This endpoint allows users to change their password. Regular users can only change their own password, while admins can change any user's password. The request body should contain the current password and the new password. The new password must meet the application's password policy requirements.
+        /// </remarks>
+        /// <example>
+        /// POST /api/user/change-password
+        /// {
+        ///   "currentPassword": "P@ssw0rd!",
+        ///  "newPassword": "N3wP@ssw0rd!"
+        /// }
+        /// </example>
+        [Authorize]
+        [HttpPost("change-password")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+        [ProducesResponseType(StatusCodes.Status403Forbidden)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        public async Task<IActionResult> ChangePassword([FromBody] ChangePasswordDto changePasswordDto)
+        {
+            if (!ModelState.IsValid)
+            {
+                return BadRequest(ModelState);
+            }
+
+            var userId = GetCurrentUserId();
+            var isAdmin = IsCurrentUserAdmin();
+
+            try
+            {
+                var result = await _userService.ChangePasswordAsync(userId, changePasswordDto, isAdmin);
+
+                if (result.Succeeded)
+                {
+                    return Ok(new { message = "Password changed successfully" });
+                }
+                else
+                {
+                    return BadRequest(new { message = "Password change failed", errors = result.Errors.Select(e => e.Description) });
+                }
+            }
+            catch (UnauthorizedAccessException ex)
+            {
+                return Forbid(ex.Message);
+            }
+            catch (InvalidOperationException ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
+        }
+
         #region Private Helper Methods
 
         private string GetCurrentUserId()

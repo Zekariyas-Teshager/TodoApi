@@ -1,4 +1,5 @@
 using TodoApi.DTOs;
+using Microsoft.AspNetCore.Identity;
 
 namespace TodoApi.Services.Interfaces
 {
@@ -15,5 +16,8 @@ namespace TodoApi.Services.Interfaces
         Task<IEnumerable<TokenInfoDto>> GetUserTokensAsync(string userId);
         Task<IEnumerable<AdminUserTokenInfoDto>> GetUserTokensByAdminAsync(string userId);
         Task<bool> UserExistsAsync(string userId);
+
+        // Password management
+        Task<IdentityResult> ChangePasswordAsync(string userId, ChangePasswordDto changePasswordDto, bool isAdmin);
     }
 }

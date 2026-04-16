@@ -10,6 +10,7 @@ using Microsoft.AspNetCore.OpenApi;
 using Scalar.AspNetCore;
 using TodoApi.Services.Interfaces;
 using TodoApi.Services.Implementations;
+using TodoApi.Middleware;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -25,15 +26,15 @@ builder.Services.AddDbContext<TodoContext>(options =>
 builder.Services.AddIdentity<ApplicationUser, IdentityRole>(options =>
 {
     // Password settings
-    options.Password.RequireDigit = true;
-    options.Password.RequiredLength = 6;
-    options.Password.RequireNonAlphanumeric = false;
-    options.Password.RequireUppercase = true;
-    options.Password.RequireLowercase = true;
+    // options.Password.RequireDigit = true;
+    // options.Password.RequiredLength = 6;
+    // options.Password.RequireNonAlphanumeric = false;
+    // options.Password.RequireUppercase = true;
+    // options.Password.RequireLowercase = true;
 
-    // Lockout settings
-    options.Lockout.DefaultLockoutTimeSpan = TimeSpan.FromMinutes(5);
-    options.Lockout.MaxFailedAccessAttempts = 5;
+    // // Lockout settings
+    // options.Lockout.DefaultLockoutTimeSpan = TimeSpan.FromMinutes(5);
+    // options.Lockout.MaxFailedAccessAttempts = 5;
 
     // User settings
     options.User.RequireUniqueEmail = true;
@@ -68,16 +69,29 @@ builder.Services.AddAuthentication(options =>
 });
 
 
-builder.Services.AddAuthorization(options =>
-{
-    options.AddPolicy("AdminOnly", policy => policy.RequireRole("Admin"));
-    options.AddPolicy("UserOnly", policy => policy.RequireRole("User"));
-    options.AddPolicy("AdminOrUser", policy => policy.RequireRole("Admin", "User"));
-});
+// builder.Services.AddAuthorization();
 
 builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<ITodoItemService, TodoItemService>();
 builder.Services.AddScoped<IUserService, UserService>();
+
+// Register demo services with different lifetimes
+builder.Services.AddTransient<TransientDemoService>();
+builder.Services.AddScoped<ScopedDemoService>();
+builder.Services.AddSingleton<SingletonDemoService>();
+
+// Register with keyed services to differentiate multiple instances
+builder.Services.AddKeyedTransient<IDemoService, TransientDemoService>("transient");
+builder.Services.AddKeyedScoped<IDemoService, ScopedDemoService>("scoped");
+builder.Services.AddKeyedSingleton<IDemoService, SingletonDemoService>("singleton");
+
+
+
+
+// Register the consumer service
+builder.Services.AddScoped<ILifetimeDemoService, LifetimeDemoService>();
+
+
 // Use .NET 10's built-in OpenAPI
 builder.Services.AddOpenApi(options =>
 {
@@ -124,6 +138,8 @@ app.UseAuthorization();
 
 app.MapControllers();
 
+app.UseMiddleware<LifetimeLoggingMiddleware>();
+
 app.Run();
 
 
@@ -146,6 +162,16 @@ internal sealed class BearerSecuritySchemeTransformer(IAuthenticationSchemeProvi
             };
             document.Components ??= new OpenApiComponents();
             document.Components.SecuritySchemes = securitySchemes;
+
+            // Apply it as a requirement for all operations
+            foreach (var operation in document.Paths.Values.SelectMany(path => path.Operations))
+            {
+                operation.Value.Security ??= [];
+                operation.Value.Security.Add(new OpenApiSecurityRequirement
+                {
+                    [new OpenApiSecuritySchemeReference("Bearer", document)] = []
+                });
+            }
         }
     }
 }

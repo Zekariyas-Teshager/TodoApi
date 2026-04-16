@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using Microsoft.AspNetCore.Identity;
 using TodoApi.DTOs;
 using TodoApi.Models;
 using TodoApi.Services.Interfaces;
@@ -9,11 +10,13 @@ namespace TodoApi.Services.Implementations
     {
         private readonly TodoContext _context;
         private readonly ILogger<UserService> _logger;
+        private readonly UserManager<ApplicationUser> _userManager;
 
-        public UserService(TodoContext context, ILogger<UserService> logger)
+        public UserService(TodoContext context, ILogger<UserService> logger, UserManager<ApplicationUser> userManager)
         {
             _context = context;
             _logger = logger;
+            _userManager = userManager;
         }
 
         #region Admin Methods
@@ -165,6 +168,38 @@ namespace TodoApi.Services.Implementations
             return tokens;
         }
 
+        // Use ASP.NET Core Identity's UserManager for password changes instead of manual hashing.
+        // This method assumes UserManager<ApplicationUser> is injected into the service.
+
+        public async Task<IdentityResult> ChangePasswordAsync(string userId, ChangePasswordDto changePasswordDto, bool isAdmin)
+        {
+            var user = await _userManager.FindByIdAsync(userId);
+            if (user == null)
+            {
+            _logger.LogWarning("User not found for password change: {UserId}", userId);
+            return IdentityResult.Failed(new IdentityError { Description = $"User with ID {userId} not found" });
+            }
+
+            // Check permission (already checked in controller, but double-check)
+            if (!isAdmin && user.Id != userId)
+            {
+            _logger.LogWarning("User {UserId} attempted to change another user's password", userId);
+            return IdentityResult.Failed(new IdentityError { Description = "You don't have permission to change this password" });
+            }
+
+            var result = await _userManager.ChangePasswordAsync(user, changePasswordDto.CurrentPassword, changePasswordDto.NewPassword);
+
+            if (result.Succeeded)
+            {
+            _logger.LogInformation("Password changed successfully for user {UserId}", userId);
+            }
+            else
+            {
+            _logger.LogWarning("Password change failed for user {UserId}: {Errors}", userId, string.Join(", ", result.Errors.Select(e => e.Description)));
+            }
+
+            return result;
+        }
         #endregion
 
         #region Helper Methods

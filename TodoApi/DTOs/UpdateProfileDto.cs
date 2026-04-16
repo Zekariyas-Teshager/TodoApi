@@ -28,4 +28,10 @@ namespace TodoApi.DTOs
         public int Id { get; set; }
         public UserProfileDto? User { get; set; }
     }
+
+    public class ChangePasswordDto
+    {
+        public string CurrentPassword { get; set; } = string.Empty;
+        public string NewPassword { get; set; } = string.Empty; 
+    }
 }
