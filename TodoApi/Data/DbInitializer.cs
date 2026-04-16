@@ -1,9 +1,14 @@
 ﻿using Microsoft.AspNetCore.Identity;
+using TodoApi.Data;
 using TodoApi.Models;
 
 public static class DbInitializer
 {
-    public static async Task Initialize(TodoContext context, RoleManager<IdentityRole> roleManager, UserManager<ApplicationUser> userManager)
+    public static async Task Initialize(
+        TodoContext context,
+        RoleManager<IdentityRole> roleManager,
+        UserManager<ApplicationUser> userManager
+    )
     {
         // Ensure database is created
         context.Database.EnsureCreated();
@@ -28,7 +33,7 @@ public static class DbInitializer
             {
                 UserName = adminEmail,
                 Email = adminEmail,
-                FullName = "System Administrator"
+                FullName = "System Administrator",
             };
 
             var result = await userManager.CreateAsync(adminUser, "Admin@123");
@@ -64,20 +69,20 @@ public static class DbInitializer
             {
                 Name = "Complete project proposal",
                 IsComplete = false,
-                Secret = "Due by Friday"
+                Secret = "Due by Friday",
             },
             new TodoItem
             {
                 Name = "Review pull requests",
                 IsComplete = true,
-                Secret = "Team is waiting"
+                Secret = "Team is waiting",
             },
             new TodoItem
             {
                 Name = "Update documentation",
                 IsComplete = false,
-                Secret = "New features added"
-            }
+                Secret = "New features added",
+            },
         };
 
         // Add to context and save

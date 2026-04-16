@@ -1,7 +1,7 @@
 // Controllers/UserController.cs
+using System.Security.Claims;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using System.Security.Claims;
 using TodoApi.DTOs;
 using TodoApi.Services.Interfaces;
 
@@ -38,7 +38,7 @@ namespace TodoApi.Controllers
         /// <summary>
         /// Get current user's profile
         /// </summary>
-        [Authorize(Roles = "User")]
+        [Authorize]
         [HttpGet("me")]
         [ProducesResponseType(typeof(UserProfileDto), StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -46,9 +46,9 @@ namespace TodoApi.Controllers
         public async Task<IActionResult> GetMyProfile()
         {
             var userId = GetCurrentUserId();
-            
+
             var user = await _userService.GetUserProfileAsync(userId);
-            
+
             if (user == null)
             {
                 return NotFound(new { message = "User profile not found" });
@@ -60,7 +60,7 @@ namespace TodoApi.Controllers
         /// <summary>
         /// Update current user's profile
         /// </summary>
-        [Authorize(Roles = "User")]
+        [Authorize]
         [HttpPut("me")]
         [ProducesResponseType(typeof(UserProfileDto), StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
@@ -80,7 +80,7 @@ namespace TodoApi.Controllers
             try
             {
                 var updatedUser = await _userService.UpdateUserProfileAsync(userId, model, isAdmin);
-                
+
                 if (updatedUser == null)
                 {
                     return NotFound(new { message = "User not found" });
@@ -108,9 +108,9 @@ namespace TodoApi.Controllers
         public async Task<IActionResult> GetMyTokens()
         {
             var userId = GetCurrentUserId();
-            
+
             var tokens = await _userService.GetUserTokensAsync(userId);
-            
+
             return Ok(tokens);
         }
 
@@ -133,7 +133,7 @@ namespace TodoApi.Controllers
             }
 
             var tokens = await _userService.GetUserTokensByAdminAsync(userId);
-            
+
             return Ok(tokens);
         }
 
@@ -203,9 +203,9 @@ namespace TodoApi.Controllers
 
         private string GetCurrentUserId()
         {
-            return User.FindFirstValue("userId") ?? 
-                   User.FindFirstValue(ClaimTypes.NameIdentifier) ?? 
-                   throw new UnauthorizedAccessException("User ID not found in token");
+            return User.FindFirstValue("userId")
+                ?? User.FindFirstValue(ClaimTypes.NameIdentifier)
+                ?? throw new UnauthorizedAccessException("User ID not found in token");
         }
 
         private bool IsCurrentUserAdmin()

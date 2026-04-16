@@ -1,10 +1,11 @@
-using Microsoft.AspNetCore.Identity;
-using Microsoft.EntityFrameworkCore;
-using Microsoft.IdentityModel.Tokens;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Security.Cryptography;
 using System.Text;
+using Microsoft.AspNetCore.Identity;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.IdentityModel.Tokens;
+using TodoApi.Data;
 using TodoApi.DTOs;
 using TodoApi.Models;
 using TodoApi.Services.Interfaces;
@@ -22,7 +23,8 @@ namespace TodoApi.Services.Implementations
             UserManager<ApplicationUser> userManager,
             SignInManager<ApplicationUser> signInManager,
             IConfiguration configuration,
-            TodoContext context)
+            TodoContext context
+        )
         {
             _userManager = userManager;
             _signInManager = signInManager;
@@ -43,7 +45,7 @@ namespace TodoApi.Services.Implementations
             {
                 UserName = model.Email,
                 Email = model.Email,
-                FullName = model.FullName
+                FullName = model.FullName,
             };
 
             var result = await _userManager.CreateAsync(user, model.Password);
@@ -64,7 +66,7 @@ namespace TodoApi.Services.Implementations
         public async Task<AuthResponseDto> LoginAsync(LoginDto model)
         {
             var user = await _userManager.FindByEmailAsync(model.Email);
-            
+
             if (user == null)
             {
                 throw new UnauthorizedAccessException("Invalid email or password");
@@ -88,8 +90,8 @@ namespace TodoApi.Services.Implementations
             }
 
             // Find the refresh token in database
-            var refreshTokenEntity = await _context.RefreshTokens
-                .Include(rt => rt.User)
+            var refreshTokenEntity = await _context
+                .RefreshTokens.Include(rt => rt.User)
                 .FirstOrDefaultAsync(rt => rt.Token == refreshToken);
 
             if (refreshTokenEntity == null)
@@ -111,19 +113,22 @@ namespace TodoApi.Services.Implementations
 
             // Generate new tokens (token rotation)
             var user = refreshTokenEntity.User;
-            var newRefreshToken = await GenerateRefreshTokenAsync(user, refreshTokenEntity.CreatedByIp?.ToString() ?? "unknown");
-            
+            var newRefreshToken = await GenerateRefreshTokenAsync(
+                user,
+                refreshTokenEntity.CreatedByIp?.ToString() ?? "unknown"
+            );
+
             // Revoke current token and mark it as replaced
             refreshTokenEntity.IsRevoked = true;
             refreshTokenEntity.ReplacedByToken = newRefreshToken.Token;
-            
+
             _context.RefreshTokens.Update(refreshTokenEntity);
             await _context.RefreshTokens.AddAsync(newRefreshToken);
             await _context.SaveChangesAsync();
 
             // Generate new access token
             var accessToken = await GenerateAccessTokenAsync(user);
-            
+
             return new AuthResponseDto
             {
                 Token = accessToken,
@@ -138,8 +143,9 @@ namespace TodoApi.Services.Implementations
                 throw new ArgumentException("Refresh token is required");
             }
 
-            var refreshToken = await _context.RefreshTokens
-                .FirstOrDefaultAsync(rt => rt.Token == token);
+            var refreshToken = await _context.RefreshTokens.FirstOrDefaultAsync(rt =>
+                rt.Token == token
+            );
 
             if (refreshToken == null)
             {
@@ -149,7 +155,9 @@ namespace TodoApi.Services.Implementations
             // Check if the user owns this token or is admin
             if (!isAdmin && refreshToken.UserId != userId)
             {
-                throw new UnauthorizedAccessException("You don't have permission to revoke this token");
+                throw new UnauthorizedAccessException(
+                    "You don't have permission to revoke this token"
+                );
             }
 
             refreshToken.IsRevoked = true;
@@ -161,8 +169,10 @@ namespace TodoApi.Services.Implementations
         public async Task<bool> LogoutAsync(string userId)
         {
             // Revoke all active refresh tokens for this user
-            var activeTokens = await _context.RefreshTokens
-                .Where(rt => rt.UserId == userId && !rt.IsRevoked && rt.ExpiryDate > DateTime.UtcNow)
+            var activeTokens = await _context
+                .RefreshTokens.Where(rt =>
+                    rt.UserId == userId && !rt.IsRevoked && rt.ExpiryDate > DateTime.UtcNow
+                )
                 .ToListAsync();
 
             foreach (var token in activeTokens)
@@ -171,7 +181,7 @@ namespace TodoApi.Services.Implementations
             }
 
             await _context.SaveChangesAsync();
-            
+
             return true;
         }
 
@@ -186,33 +196,29 @@ namespace TodoApi.Services.Implementations
         {
             var accessToken = await GenerateAccessTokenAsync(user);
             var refreshToken = await GenerateRefreshTokenAsync(user, "unknown"); // IP will be set by controller
-            
+
             await _context.RefreshTokens.AddAsync(refreshToken);
             await _context.SaveChangesAsync();
 
-            return new AuthResponseDto
-            {
-                Token = accessToken,
-                RefreshToken = refreshToken.Token,
-            };
+            return new AuthResponseDto { Token = accessToken, RefreshToken = refreshToken.Token };
         }
 
         private async Task<string> GenerateAccessTokenAsync(ApplicationUser user)
         {
             var jwtSettings = _configuration.GetSection("Jwt");
             var key = Encoding.ASCII.GetBytes(jwtSettings["Key"]);
-            
+
             var roles = await _userManager.GetRolesAsync(user);
-            
+
             var claims = new List<Claim>
             {
-                new Claim(JwtRegisteredClaimNames.Sub, user.Email),
-                new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
-                new Claim(ClaimTypes.NameIdentifier, user.Id),
-                new Claim(ClaimTypes.Email, user.Email),
-                new Claim("userId", user.Id)
+                new(JwtRegisteredClaimNames.Sub, user.Email),
+                new(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
+                new(ClaimTypes.NameIdentifier, user.Id),
+                new(ClaimTypes.Email, user.Email),
+                new("userId", user.Id),
             };
-            
+
             foreach (var role in roles)
             {
                 claims.Add(new Claim(ClaimTypes.Role, role));
@@ -221,21 +227,27 @@ namespace TodoApi.Services.Implementations
             var tokenDescriptor = new SecurityTokenDescriptor
             {
                 Subject = new ClaimsIdentity(claims),
-                Expires = DateTime.UtcNow.AddMinutes(Convert.ToDouble(jwtSettings["DurationInMinutes"])),
+                Expires = DateTime.UtcNow.AddMinutes(
+                    Convert.ToDouble(jwtSettings["DurationInMinutes"])
+                ),
                 Issuer = jwtSettings["Issuer"],
                 Audience = jwtSettings["Audience"],
                 SigningCredentials = new SigningCredentials(
                     new SymmetricSecurityKey(key),
-                    SecurityAlgorithms.HmacSha256Signature)
+                    SecurityAlgorithms.HmacSha256Signature
+                ),
             };
 
             var tokenHandler = new JwtSecurityTokenHandler();
             var token = tokenHandler.CreateToken(tokenDescriptor);
-            
+
             return tokenHandler.WriteToken(token);
         }
 
-        private async Task<RefreshToken> GenerateRefreshTokenAsync(ApplicationUser user, string ipAddress)
+        private async Task<RefreshToken> GenerateRefreshTokenAsync(
+            ApplicationUser user,
+            string ipAddress
+        )
         {
             return new RefreshToken
             {
@@ -244,7 +256,7 @@ namespace TodoApi.Services.Implementations
                 ExpiryDate = DateTime.UtcNow.AddDays(7),
                 IsRevoked = false,
                 CreatedAt = DateTime.UtcNow,
-                CreatedByIp = ipAddress
+                CreatedByIp = ipAddress,
             };
         }
 
@@ -253,19 +265,21 @@ namespace TodoApi.Services.Implementations
             var currentToken = token;
             while (!string.IsNullOrEmpty(currentToken.ReplacedByToken))
             {
-                var nextToken = await _context.RefreshTokens
-                    .FirstOrDefaultAsync(rt => rt.Token == currentToken.ReplacedByToken);
-                
+                var nextToken = await _context.RefreshTokens.FirstOrDefaultAsync(rt =>
+                    rt.Token == currentToken.ReplacedByToken
+                );
+
                 if (nextToken != null && !nextToken.IsRevoked)
                 {
                     nextToken.IsRevoked = true;
                     _context.RefreshTokens.Update(nextToken);
                 }
-                
+
                 currentToken = nextToken;
-                if (currentToken == null) break;
+                if (currentToken == null)
+                    break;
             }
-            
+
             await _context.SaveChangesAsync();
         }
 
