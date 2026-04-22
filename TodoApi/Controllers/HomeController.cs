@@ -7,7 +7,8 @@ public class HomeController : ControllerBase
     [HttpGet]
     public IActionResult Index()
     {
-        var html = @"
+        var html =
+            @"
 <!DOCTYPE html>
 <html>
 <head>
