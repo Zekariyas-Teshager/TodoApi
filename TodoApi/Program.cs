@@ -8,9 +8,9 @@ using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi;
 using Scalar.AspNetCore;
 using TodoApi.Data;
+using TodoApi.Middleware;
 using TodoApi.Models;
 using TodoApi.Services.Implementations;
-using TodoApi.Middleware;
 using TodoApi.Services.Interfaces;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -20,16 +20,16 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddControllers();
 
 // Configure Entity Framework with SQL Server
- var connectionStringSqlServer = builder.Configuration.GetConnectionString(
-     "DefaultConnectionSqlServer"
- );
-builder.Services.AddDbContext<TodoContext>(options =>
-    options.UseSqlServer(connectionStringSqlServer)
-);
+// var connectionStringSqlServer = builder.Configuration.GetConnectionString(
+//     "DefaultConnectionSqlServer"
+// );
+// builder.Services.AddDbContext<TodoContext>(options =>
+//     options.UseSqlServer(connectionStringSqlServer)
+// );
 
 // Configure Entity Framework with MySQL
-//var connectionString = builder.Configuration.GetConnectionString("DefaultConnectionMySql");
-//builder.Services.AddDbContext<TodoContext>(options => options.UseMySQL(connectionString));
+var connectionString = builder.Configuration.GetConnectionString("DefaultConnectionMySql");
+builder.Services.AddDbContext<TodoContext>(options => options.UseMySQL(connectionString));
 
 // Configure Identity
 builder
@@ -95,12 +95,8 @@ builder.Services.AddKeyedTransient<IDemoService, TransientDemoService>("transien
 builder.Services.AddKeyedScoped<IDemoService, ScopedDemoService>("scoped");
 builder.Services.AddKeyedSingleton<IDemoService, SingletonDemoService>("singleton");
 
-
-
-
 // Register the consumer service
 builder.Services.AddScoped<ILifetimeDemoService, LifetimeDemoService>();
-
 
 // Use .NET 10's built-in OpenAPI
 builder.Services.AddOpenApi(options =>
