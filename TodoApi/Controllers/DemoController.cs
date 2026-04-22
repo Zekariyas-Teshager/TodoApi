@@ -18,7 +18,8 @@ namespace TodoApi.Controllers
             [FromKeyedServices("scoped")] IDemoService scopedDirect,
             [FromKeyedServices("singleton")] IDemoService singletonDirect,
             ILifetimeDemoService lifetimeDemoService,
-            ILogger<DemoController> logger)
+            ILogger<DemoController> logger
+        )
         {
             _transientDirect = transientDirect;
             _scopedDirect = scopedDirect;
@@ -31,7 +32,7 @@ namespace TodoApi.Controllers
         public IActionResult ShowLifetimes()
         {
             _logger.LogInformation("=== LIFETIME DEMO START ===");
-            
+
             var result = new
             {
                 Message = "Call this endpoint multiple times to see lifetime behavior",
@@ -39,16 +40,16 @@ namespace TodoApi.Controllers
                 {
                     TransientDirect = _transientDirect.GetInfo(),
                     ScopedDirect = _scopedDirect.GetInfo(),
-                    SingletonDirect = _singletonDirect.GetInfo()
+                    SingletonDirect = _singletonDirect.GetInfo(),
                 },
                 FromServiceConsumer = _lifetimeDemoService.GetLifetimeInfo(),
                 Explanation = new
                 {
                     Transient = "🟡 Transient: Each instance has DIFFERENT IDs - even within same request",
                     Scoped = "🟢 Scoped: Instances have SAME ID within this request",
-                    Singleton = "🔵 Singleton: SAME ID across ALL requests (app lifetime)"
+                    Singleton = "🔵 Singleton: SAME ID across ALL requests (app lifetime)",
                 },
-                NextSteps = "Try refreshing this page multiple times and watch the console logs!"
+                NextSteps = "Try refreshing this page multiple times and watch the console logs!",
             };
 
             _logger.LogInformation("=== LIFETIME DEMO END ===");
@@ -60,25 +61,27 @@ namespace TodoApi.Controllers
         {
             // Simulate multiple service calls within same request
             var tasks = new List<Task<Dictionary<string, object>>>();
-            
+
             for (int i = 0; i < 3; i++)
             {
                 tasks.Add(Task.Run(() => _lifetimeDemoService.GetLifetimeInfo()));
             }
 
             var results = await Task.WhenAll(tasks);
-            
-            return Ok(new
-            {
-                Message = "Multiple parallel operations within same request",
-                Results = results,
-                Observation = new
+
+            return Ok(
+                new
                 {
-                    Transient = "All transient instances will be DIFFERENT across all parallel tasks",
-                    Scoped = "All scoped instances will be SAME across all parallel tasks",
-                    Singleton = "All singleton instances will be SAME across all parallel tasks"
+                    Message = "Multiple parallel operations within same request",
+                    Results = results,
+                    Observation = new
+                    {
+                        Transient = "All transient instances will be DIFFERENT across all parallel tasks",
+                        Scoped = "All scoped instances will be SAME across all parallel tasks",
+                        Singleton = "All singleton instances will be SAME across all parallel tasks",
+                    },
                 }
-            });
+            );
         }
     }
 }

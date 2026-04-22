@@ -7,6 +7,9 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi;
 using Scalar.AspNetCore;
+using Serilog;
+using Serilog.Enrichers;
+using Serilog.Sinks.Grafana.Loki;
 using TodoApi.Data;
 using TodoApi.Middleware;
 using TodoApi.Models;
@@ -14,6 +17,38 @@ using TodoApi.Services.Implementations;
 using TodoApi.Services.Interfaces;
 
 var builder = WebApplication.CreateBuilder(args);
+
+// Configure Serilog BEFORE building the app
+builder.Host.UseSerilog(
+    (context, services, configuration) =>
+    {
+        var serviceName = "TodoApi";
+        var lokiUrl = context.Configuration["Logging:Loki:Url"] ?? "http://localhost:3100";
+
+        // Create Loki labels based on environment and service name
+        var labels = new List<LokiLabel>
+        {
+            new LokiLabel { Key = "service", Value = serviceName },
+            new LokiLabel
+            {
+                Key = "environment",
+                Value = context.HostingEnvironment.EnvironmentName,
+            },
+            new LokiLabel { Key = "instance", Value = Environment.MachineName },
+        };
+
+        configuration
+            .ReadFrom.Configuration(context.Configuration)
+            .ReadFrom.Services(services)
+            .Enrich.FromLogContext()
+            .Enrich.WithProperty("Service", serviceName)
+            .Enrich.WithProperty("Environment", context.HostingEnvironment.EnvironmentName)
+            .WriteTo.Console(
+                outputTemplate: "[{Timestamp:HH:mm:ss} {Level:u3}] {Message:lj}{NewLine}{Exception}"
+            )
+            .WriteTo.GrafanaLoki(lokiUrl, labels: labels);
+    }
+);
 
 // Add services to the container.
 
@@ -139,6 +174,9 @@ builder.Services.AddOpenApi(options =>
 });
 
 var app = builder.Build();
+
+// Add Serilog request logging middleware
+app.UseSerilogRequestLogging(); // Automatically logs HTTP requests
 
 if (app.Environment.IsDevelopment())
 {

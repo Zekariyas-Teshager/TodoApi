@@ -1,0 +1,31 @@
+version: "3.8"
+
+services:
+  loki:
+    image: grafana/loki:2.9.2
+    ports:
+      - "3100:3100"  # Loki API port
+    volumes:
+      # This line saves Loki's data to a Docker volume named 'loki-data'
+      - loki-data:/loki
+    networks:
+      - todo-network
+
+  grafana:
+    image: grafana/grafana:10.2.2
+    ports:
+      - "3000:3000"  # Grafana UI port
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=admin  # Default password
+    depends_on:
+      - loki
+    networks:
+      - todo-network
+
+# This defines the persistent storage volume
+volumes:
+  loki-data:
+
+networks:
+  todo-network:
+    driver: bridge

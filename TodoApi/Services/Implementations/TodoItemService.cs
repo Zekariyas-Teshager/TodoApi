@@ -29,6 +29,7 @@ namespace TodoApi.Services.Implementations
                 query = query.Where(t => t.UserId == userId);
             }
 
+            _logger.LogInformation("Fetching all todo items");
             var todoItems = await query.Select(t => MapToResponseDto(t)).ToListAsync();
 
             _logger.LogInformation(
@@ -77,6 +78,8 @@ namespace TodoApi.Services.Implementations
             string userId
         )
         {
+            _logger.LogInformation("Creating new todo item: {Name}", createDto.Name);
+
             var todoItem = new TodoItem
             {
                 Name = createDto.Name,
